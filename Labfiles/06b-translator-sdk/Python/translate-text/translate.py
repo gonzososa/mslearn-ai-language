@@ -2,7 +2,8 @@ from dotenv import load_dotenv
 import os
 
 # import namespaces
-
+from azure.ai.translation.text import *
+from azure.ai.translation.text.models import InputTextItem
 
 
 def main():
@@ -13,15 +14,36 @@ def main():
         translatorKey = os.getenv('TRANSLATOR_KEY')
 
         # Create client using endpoint and key
-        
+        credential = TranslatorCredential( translatorKey, translatorRegion )
+        client = TextTranslationClient( credential )
 
 
         ## Choose target language
-
-
-
+        language_response = client.get_languages( scope="translation" )
+        print( "{} language supported. " . format( len( language_response.translation ) ) )
+        print( "See https://learn.microsoft.com/azure/ai-services/translator/language-support#translation" )
+        print( "Enter a target language code for translation (for example, 'en')" )
+        
+        targetLanguage = "xx"
+        supportedLanguage = False
+        while supportedLanguage == False:
+            targetLanguage = input( )
+            if targetLanguage in language_response.translation.keys( ):
+                supportedLanguage = True
+            else:
+                print( "{} is not supported language." . format( targetLanguage ) )
         # Translate text
-
+        inputText = ""
+        while inputText.lower( ) != 'quit':
+            inputText = input( "Enter text to translate ('quit' to exit): " )
+            if inputText != "quit":
+                input_text_element = [InputTextItem( text = inputText)]
+                translationResponse = client.translate( content=input_text_element, to=[ targetLanguage ] )
+                translation = translationResponse[ 0 ] if translationResponse else None
+                if translation:
+                    sourceLanguage = translation.detected_language
+                    for translated_text in translation.translations:
+                        print( f"'{inputText}' was translated from {sourceLanguage.language} to {translated_text.to} as {translated_text.text}" )
 
 
     except Exception as ex:
